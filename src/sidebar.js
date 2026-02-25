@@ -93,6 +93,7 @@ function cacheElements() {
     copyBtn: document.getElementById('copy-btn'),
     copyLabel: document.getElementById('copy-label'),
     redoBtn: document.getElementById('redo-btn'),
+    clearBtn: document.getElementById('clear-btn'),
     settingsBtn: document.getElementById('settings-btn'),
     quickSettingsBtn: document.getElementById('quick-settings-btn'),
     quickDropdown: document.getElementById('quick-settings-dropdown'),
@@ -128,6 +129,15 @@ function setupShortcutLabel() {
 }
 
 function setupListeners() {
+  // Clear button → reset to empty state
+  el.clearBtn.addEventListener('click', () => {
+    currentUrl = '';
+    el.urlInput.value = '';
+    updateUrlBarButtons();
+    el.timeSaved.style.display = 'none';
+    showState('empty');
+  });
+
   // Settings button → options page
   el.settingsBtn.addEventListener('click', () => {
     api.runtime.openOptionsPage();
@@ -581,6 +591,7 @@ function showState(state) {
   el.stateResult.style.display = 'none';
   el.stateError.style.display = 'none';
   el.footer.style.display = 'none';
+  el.clearBtn.style.display = 'none';
 
   switch (state) {
     case 'empty':
@@ -592,10 +603,12 @@ function showState(state) {
     case 'result':
       el.stateResult.style.display = '';
       el.footer.style.display = '';
+      el.clearBtn.style.display = '';
       break;
     case 'error':
       el.stateError.style.display = '';
       el.footer.style.display = '';
+      el.clearBtn.style.display = '';
       break;
   }
 
