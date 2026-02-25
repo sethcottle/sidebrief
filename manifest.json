@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
   "name": "Sidebrief for Kagi Summarizer",
-  "version": "0.0.16",
+  "version": "1.0.0",
   "description": "Summarize any page with Kagi Universal Summarizer"
 }
