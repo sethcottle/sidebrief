@@ -101,7 +101,7 @@ Sidebrief requests a few permissions in the `manifest.json` file.
 
 #### Privacy
 
-Sidebrief runs completely locally in your browser. The only data it stores are your settings preferences and recent summary history, which are kept in your browser's extension storage. The only external communication is sending URLs to the Kagi Summarizer API when you request a summary. It does not collect any analytics, it does not store any information about your tabs or browsing history, it does not send any data anywhere other than Kagi for summarization. Your data is yours and yours alone.
+Sidebrief runs entirely in your browser. There are no background servers, no hidden calls, and no analytics. The only time any data leaves your device is when you explicitly request a summary, at which point the page URL is sent to the Kagi Summarizer API to generate it. Tiny Extensions does not collect or track anything. No analytics. No telemetry. No user data. When you request a summary, your interaction is governed solely by the [Kagi Privacy Policy](https://kagi.com/privacy) and [Kagi LLM Policy](https://help.kagi.com/kagi/privacy/llm-policy.html).
 
 ## License
 
@@ -111,7 +111,7 @@ Sidebrief for Kagi Summarizer is free software: you can redistribute it and/or m
 
 Sidebrief for Kagi Summarizer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. Please see the [GNU General Public License](https://www.gnu.org/licenses/quick-guide-gplv3.html) for more details.
 
-Inspired by the official [Kagi Summarizer Extension for Chrome](https://github.com/kagisearch/chrome_extension_summarizer).
+Inspired by the official [Kagi Summarizer Extension for Chrome](https://github.com/kagisearch/chrome_extension_summarizer). Love Kagi? Check out [OpenKagi](https://openkagi.com) to share and discover community-made Lenses and Themes.
 
 ---
 
