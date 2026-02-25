@@ -75,8 +75,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // API token
     tokenInput.value = settings.api_token || '';
 
-    // Engine
-    const engine = settings.engine || 'cecil';
+    // Engine (migrate deprecated daphne → agnes)
+    let engine = settings.engine || 'cecil';
+    if (engine === 'daphne') {
+      engine = 'agnes';
+      saveSettings({ engine });
+    }
     const radio = document.querySelector(`input[name="engine"][value="${engine}"]`);
     if (radio) radio.checked = true;
 

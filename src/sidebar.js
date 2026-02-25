@@ -15,9 +15,11 @@ const themeColors = {
 
 // --- State ---
 let currentUrl = '';
+let currentText = ''; // Text input for text-mode summarization
 let currentPageUrl = ''; // Tracks the actual active tab URL
 let isLoading = false;
 let historyOpen = false;
+let hasApiToken = false; // Whether an API token is configured
 const sidebarOpenedAt = Date.now();
 
 // --- DOM refs ---
@@ -65,6 +67,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupListeners();
   await loadSavedType();
   await loadQuickSettings();
+  await updateTokenState();
   await renderHistory();
   // Don't auto-summarize on load — wait for an explicit trigger
   // (Alt+Shift+S, context menu, or user clicking "Summarize this Page")
@@ -86,6 +89,7 @@ function cacheElements() {
     stateResult: document.getElementById('state-result'),
     stateError: document.getElementById('state-error'),
     summaryContent: document.getElementById('summary-content'),
+    fallbackNotice: document.getElementById('fallback-notice'),
     errorMessage: document.getElementById('error-message'),
     errorActions: document.getElementById('error-actions'),
     footer: document.getElementById('sidebar-footer'),
@@ -132,7 +136,9 @@ function setupListeners() {
   // Clear button → reset to empty state
   el.clearBtn.addEventListener('click', () => {
     currentUrl = '';
+    currentText = '';
     el.urlInput.value = '';
+    autoResizeInput();
     updateUrlBarButtons();
     el.timeSaved.style.display = 'none';
     showState('empty');
@@ -146,20 +152,28 @@ function setupListeners() {
   // Summarize button (arrow in URL bar)
   el.summarizeBtn.addEventListener('click', handleUrlSubmit);
 
-  // Enter key in URL input
+  // Enter key submits, Shift+Enter inserts newline (only when token allows text)
   el.urlInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleUrlSubmit();
     }
+    // Block newlines when no API token (URL-only mode)
+    if (e.key === 'Enter' && e.shiftKey && !hasApiToken) {
+      e.preventDefault();
+    }
   });
 
-  // URL input — show/hide clear button as user types
-  el.urlInput.addEventListener('input', updateUrlBarButtons);
+  // URL input — show/hide clear button and auto-resize as user types
+  el.urlInput.addEventListener('input', () => {
+    updateUrlBarButtons();
+    autoResizeInput();
+  });
 
   // Clear URL button
   el.clearUrlBtn.addEventListener('click', () => {
     el.urlInput.value = '';
+    autoResizeInput();
     el.urlInput.focus();
     updateUrlBarButtons();
   });
@@ -183,7 +197,11 @@ function setupListeners() {
 
   // Redo button
   el.redoBtn.addEventListener('click', () => {
-    if (currentUrl) runSummarize(currentUrl);
+    if (currentText) {
+      runSummarize(null, currentText);
+    } else if (currentUrl) {
+      runSummarize(currentUrl);
+    }
   });
 
   // Quick settings dropdown
@@ -205,6 +223,13 @@ function setupListeners() {
   document.addEventListener('click', (e) => {
     if (!el.quickDropdown.contains(e.target) && e.target !== el.quickSettingsBtn) {
       el.quickDropdown.style.display = 'none';
+    }
+  });
+
+  // Update token state when settings change (e.g. user adds/removes API token)
+  api.storage.onChanged.addListener((changes, area) => {
+    if (area === 'sync' && changes.summarizer_settings) {
+      updateTokenState();
     }
   });
 
@@ -239,8 +264,41 @@ function setupListeners() {
 
 // --- URL Bar Buttons ---
 function updateUrlBarButtons() {
-  const hasText = el.urlInput.value.trim().length > 0;
-  el.clearUrlBtn.style.display = hasText ? '' : 'none';
+  const hasValue = el.urlInput.value.trim().length > 0;
+  el.clearUrlBtn.style.display = hasValue ? '' : 'none';
+}
+
+// --- Auto-resize textarea ---
+function autoResizeInput() {
+  const textarea = el.urlInput;
+  const value = textarea.value.trim();
+
+  // URLs stay single-line and truncated; text expands
+  if (!value || isUrl(value)) {
+    textarea.classList.add('single-line');
+    textarea.classList.remove('expanded');
+    textarea.style.height = '';
+    return;
+  }
+
+  textarea.classList.remove('single-line');
+  textarea.style.height = 'auto';
+  textarea.style.height = textarea.scrollHeight + 'px';
+  // Add expanded class when content overflows max-height for scrolling
+  textarea.classList.toggle('expanded', textarea.scrollHeight > 120);
+}
+
+// --- Token state ---
+async function updateTokenState() {
+  try {
+    const result = await api.storage.sync.get('summarizer_settings');
+    hasApiToken = Boolean(result?.summarizer_settings?.api_token);
+  } catch (e) {
+    hasApiToken = false;
+  }
+  el.urlInput.placeholder = hasApiToken
+    ? 'Enter a URL or paste text to summarize...'
+    : 'Enter a URL or summarize this page...';
 }
 
 // Show/hide the "Summarize current page" text link based on state
@@ -252,7 +310,15 @@ function updateCurrentPageAction() {
   el.useCurrentPage.style.display = (resultVisible || errorVisible) ? '' : 'none';
 }
 
-// --- URL Submit ---
+// --- URL vs Text Detection ---
+function isUrl(input) {
+  if (/^https?:\/\//i.test(input)) return true;
+  // Matches: domain.tld, domain.tld/path, subdomain.domain.tld
+  if (/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z]{2,})+(\/\S*)?$/i.test(input.split('\n')[0].trim())) return true;
+  return false;
+}
+
+// --- Input Submit ---
 function handleUrlSubmit() {
   const input = el.urlInput.value.trim();
   if (!input) {
@@ -261,19 +327,33 @@ function handleUrlSubmit() {
     return;
   }
 
-  // If the user typed something without a protocol, add https://
-  let url = input;
-  if (!/^https?:\/\//i.test(url)) {
-    url = 'https://' + url;
-  }
+  if (isUrl(input)) {
+    // URL mode — current behavior
+    let url = input;
+    if (!/^https?:\/\//i.test(url)) {
+      url = 'https://' + url;
+    }
 
-  try {
-    new URL(url); // validate
-    currentUrl = url;
-    runSummarize(url);
-  } catch (e) {
-    el.errorMessage.textContent = 'Please enter a valid URL.';
-    showState('error');
+    try {
+      new URL(url); // validate
+      currentUrl = url;
+      currentText = '';
+      runSummarize(url);
+    } catch (e) {
+      el.errorMessage.textContent = 'Please enter a valid URL.';
+      showState('error');
+    }
+  } else {
+    // Text mode — requires API token
+    if (!hasApiToken) {
+      el.errorMessage.textContent = 'Text summarization requires an API token. Add one in Settings.';
+      renderErrorActions('auth_token');
+      showState('error');
+      return;
+    }
+    currentText = input;
+    currentUrl = '';
+    runSummarize(null, input);
   }
 }
 
@@ -282,7 +362,13 @@ async function loadQuickSettings() {
   try {
     const result = await api.storage.sync.get('summarizer_settings');
     const s = result?.summarizer_settings || {};
-    el.quickEngine.value = s.engine || 'cecil';
+    // Migrate deprecated daphne → agnes
+    let engine = s.engine || 'cecil';
+    if (engine === 'daphne') {
+      engine = 'agnes';
+      saveQuickSetting('engine', engine);
+    }
+    el.quickEngine.value = engine;
     el.quickLanguage.value = s.target_language || '';
   } catch (e) {
     // defaults are fine
@@ -322,9 +408,13 @@ function setActiveType(type, shouldResummarize = true) {
     api.storage.sync.set({ summarizer_settings: settings });
   });
 
-  // Re-summarize if the type changed and we have a URL
-  if (shouldResummarize && wasDifferent && currentUrl && !isLoading) {
-    runSummarize(currentUrl);
+  // Re-summarize if the type changed and we have content
+  if (shouldResummarize && wasDifferent && !isLoading) {
+    if (currentText) {
+      runSummarize(null, currentText);
+    } else if (currentUrl) {
+      runSummarize(currentUrl);
+    }
   }
 }
 
@@ -348,7 +438,9 @@ async function summarizeCurrentPage() {
     }
     currentPageUrl = response.url;
     currentUrl = response.url;
+    currentText = '';
     el.urlInput.value = response.url;
+    autoResizeInput();
     updateUrlBarButtons();
     runSummarize(response.url);
   } catch (e) {
@@ -356,26 +448,44 @@ async function summarizeCurrentPage() {
   }
 }
 
-async function runSummarize(url) {
+async function runSummarize(url, text) {
   if (isLoading) return;
   isLoading = true;
 
   showState('loading');
-  el.urlInput.value = url;
+  el.urlInput.value = url || text || '';
+  autoResizeInput();
   updateUrlBarButtons();
 
   const summaryType = getActiveType();
 
+  const message = {
+    type: 'do_summarize',
+    summary_type: summaryType,
+  };
+  if (text) {
+    message.text = text;
+  } else {
+    message.url = url;
+  }
+
   try {
-    const result = await api.runtime.sendMessage({
-      type: 'do_summarize',
-      url: url,
-      summary_type: summaryType,
-    });
+    const result = await api.runtime.sendMessage(message);
 
     if (result?.success) {
       renderSummary(result.summary, summaryType);
       showState('result');
+
+      // Show fallback notice if we fell back to Cecil
+      if (result.fallbackReason) {
+        const engineName = result.engine.charAt(0).toUpperCase() + result.engine.slice(1);
+        el.fallbackNotice.innerHTML = result.fallbackReason === 'insufficient_credit'
+          ? `Summarized with Cecil due to insufficient API credits to use ${engineName}. <a href="https://kagi.com/settings/billing_api" target="_blank" rel="noopener">Add credits</a>`
+          : `Summarized with Cecil (${engineName} requires an API token)`;
+        el.fallbackNotice.style.display = '';
+      } else {
+        el.fallbackNotice.style.display = 'none';
+      }
 
       // Show time saved if available
       if (result.timeSavedInMinutes && result.timeSavedInMinutes > 0) {
@@ -386,8 +496,10 @@ async function runSummarize(url) {
         el.timeSaved.style.display = 'none';
       }
 
-      // Save to history
-      await addToHistory(url);
+      // Save to history (URL summaries only)
+      if (url) {
+        await addToHistory(url);
+      }
     } else {
       el.errorMessage.textContent = result?.summary || 'An unknown error occurred.';
       renderErrorActions(result?.errorType);

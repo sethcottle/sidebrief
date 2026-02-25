@@ -194,7 +194,7 @@ html, body {
 
 .url-input-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 6px;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -216,6 +216,21 @@ html, body {
   font-size: 13px;
   outline: none;
   min-width: 0;
+  resize: none;
+  overflow: hidden;
+  line-height: 1.4;
+  padding: 6px 0;
+  max-height: 120px;
+}
+
+.url-input.single-line {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.url-input.expanded {
+  overflow-y: auto;
 }
 
 .url-input::placeholder {
@@ -461,6 +476,20 @@ html, body {
 }
 
 /* Result state */
+.fallback-notice {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0 0 12px 0;
+  padding: 6px 10px;
+  background: var(--surface);
+  border-radius: 6px;
+}
+
+.fallback-notice a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
 .summary-content {
   font-size: 14px;
   line-height: 1.7;

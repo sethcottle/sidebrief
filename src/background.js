@@ -197,12 +197,24 @@ async function summarizeContent({ url, text, summary_type }) {
   let timeSavedInMinutes = 0;
   let errorType = null; // 'auth_token' | 'auth_signin' | null
 
-  const engine = settings.engine || 'cecil';
+  const engine = (settings.engine === 'daphne' ? 'agnes' : settings.engine) || 'cecil';
   const apiToken = settings.api_token || '';
   const targetLanguage = settings.target_language || '';
   const summaryType = summary_type || settings.summary_type || 'summary';
 
-  // Use paid API if: token exists AND (non-cecil engine OR text input)
+  // Text input always requires an API token (no free fallback)
+  if (text && !apiToken) {
+    return {
+      summary: 'Text summarization requires an API token. Add one in Settings.',
+      success: false,
+      timeSavedInMinutes: 0,
+      errorType: 'auth_token',
+    };
+  }
+
+  // Paid engine without token silently falls back to Cecil (free)
+  // fallbackReason: null | 'no_token' | 'insufficient_credit'
+  let fallbackReason = (engine !== 'cecil' && !apiToken) ? 'no_token' : null;
   const useApi = Boolean(apiToken && (engine !== 'cecil' || text));
 
   try {
@@ -222,16 +234,26 @@ async function summarizeContent({ url, text, summary_type }) {
       }
     }
 
-    const searchParams = new URLSearchParams(requestParams);
     const headers = { 'Content-Type': 'application/json' };
     if (useApi) {
       headers['Authorization'] = `Bot ${apiToken}`;
     }
 
-    const response = await fetch(
-      `${useApi ? 'https://kagi.com/api/v0/summarize' : 'https://kagi.com/mother/summary_labs'}?${searchParams.toString()}`,
-      { method: 'GET', headers, credentials: 'include' },
-    );
+    // Use POST with JSON body for text input (GET query params hit URL length limits)
+    // Use GET with query params for URL input (preserves existing behavior)
+    let response;
+    if (text && useApi) {
+      response = await fetch(
+        'https://kagi.com/api/v0/summarize',
+        { method: 'POST', headers, body: JSON.stringify(requestParams) },
+      );
+    } else {
+      const searchParams = new URLSearchParams(requestParams);
+      response = await fetch(
+        `${useApi ? 'https://kagi.com/api/v0/summarize' : 'https://kagi.com/mother/summary_labs'}?${searchParams.toString()}`,
+        { method: 'GET', headers, credentials: 'include' },
+      );
+    }
 
     if (response.status === 200) {
       const result = await response.json();
@@ -255,8 +277,6 @@ async function summarizeContent({ url, text, summary_type }) {
 
       success = Boolean(result) && !Boolean(result.error) && !errorType;
     } else {
-      console.error('Summarize error:', response.status, response.statusText);
-
       if (response.status === 401) {
         if (useApi) {
           summary = 'Your API token appears to be invalid or expired. Please check your API token in Settings.';
@@ -266,13 +286,19 @@ async function summarizeContent({ url, text, summary_type }) {
           errorType = 'auth_signin';
         }
       } else {
+        let isInsufficientCredit = false;
         try {
           const contentType = response.headers.get('Content-Type');
           if (contentType && contentType.includes('application/json')) {
             const result = await response.json();
             if (result.error && result.error.length > 0) {
               const error = result.error[0];
-              summary = `Error: ${error.code} — ${error.msg}`;
+              // Check for insufficient credit — fall back to Cecil for URL requests
+              if (error.code === 101 && url && !text) {
+                isInsufficientCredit = true;
+              } else {
+                summary = `Error: ${error.code} — ${error.msg}`;
+              }
             } else {
               summary = `Error: ${response.status}`;
             }
@@ -282,11 +308,44 @@ async function summarizeContent({ url, text, summary_type }) {
         } catch (e) {
           summary = `Error: ${response.status} — ${response.statusText}`;
         }
+
+        // Log non-recoverable errors
+        if (!isInsufficientCredit) {
+          console.error('Summarize error:', response.status, response.statusText);
+        }
+
+        // Retry with free Cecil endpoint on insufficient credit (URL only)
+        if (isInsufficientCredit) {
+          try {
+            const freeParams = new URLSearchParams({ url, summary_type: summaryType });
+            if (targetLanguage) freeParams.set('target_language', targetLanguage);
+            const freeResponse = await fetch(
+              `https://kagi.com/mother/summary_labs?${freeParams.toString()}`,
+              { method: 'GET', headers: { 'Content-Type': 'application/json' }, credentials: 'include' },
+            );
+            if (freeResponse.status === 200) {
+              const freeResult = await freeResponse.json();
+              summary = freeResult?.output_text || 'Unknown error';
+              timeSavedInMinutes = freeResult?.output_data?.word_stats?.time_saved || 0;
+              if (summary.trim().toLowerCase() !== 'unauthorized') {
+                success = true;
+                fallbackReason = 'insufficient_credit';
+              } else {
+                summary = 'Unauthorized. Please make sure you are signed in to kagi.com, or add an API key in Settings.';
+                errorType = 'auth_signin';
+              }
+            } else {
+              summary = 'Insufficient API credits and free fallback failed. Please add credits or sign in to kagi.com.';
+            }
+          } catch (e) {
+            summary = 'Insufficient API credits and free fallback failed.';
+          }
+        }
       }
     }
   } catch (error) {
     summary = error.message ? `Error: ${error.message}` : JSON.stringify(error);
   }
 
-  return { summary, success, timeSavedInMinutes, errorType };
+  return { summary, success, timeSavedInMinutes, errorType, fallbackReason, engine };
 }

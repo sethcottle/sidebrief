@@ -47,7 +47,6 @@
             <select id="quick-engine" class="quick-select">
               <option value="cecil">Cecil (free)</option>
               <option value="agnes">Agnes</option>
-              <option value="daphne">Daphne</option>
               <option value="muriel">Muriel</option>
             </select>
             <label class="quick-label">Language</label>
@@ -98,7 +97,7 @@
     <!-- URL input bar -->
     <div class="url-bar">
       <div class="url-input-row">
-        <input type="url" id="url-input" class="url-input" placeholder="Enter a URL or summarize this page..." spellcheck="false" autocomplete="off">
+        <textarea id="url-input" class="url-input" rows="1" placeholder="Enter a URL or summarize this page..." spellcheck="false" autocomplete="off"></textarea>
         <button id="clear-url-btn" class="clear-url-btn" title="Clear URL" style="display: none;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"/>
@@ -159,6 +158,7 @@
 
       <!-- Result state -->
       <div id="state-result" class="state" style="display: none;">
+        <p id="fallback-notice" class="fallback-notice" style="display: none;"></p>
         <div id="summary-content" class="summary-content"></div>
       </div>
 

@@ -28,7 +28,7 @@ Sidebrief opens a sidebar panel next to whatever page you're reading. Click the 
 
 - **Sidebar interface**: summaries appear in a side panel alongside the page you're reading
 - **Summary or Key Moments**: toggle between a full summary and bullet-point key moments
-- **Paste any URL**: summarize any page, not just the one you're on
+- **Paste any URL or text**: summarize any page by URL, or paste text directly (requires API token)
 - **Keyboard shortcuts**: open/close the sidebar, summarize, or get key moments without touching the mouse
 - **Quick settings**: change engine and output language directly from the sidebar header
 - **History**: recent summaries are saved locally so you can revisit them
@@ -53,7 +53,7 @@ Shortcuts can be customized in your browser's extension shortcut settings:
 2. Click the Sidebrief icon in your toolbar to open the sidebar
 3. Summarize the current page or paste any URL
 
-The **Cecil** engine works for free if you're signed into [kagi.com](https://kagi.com). For paid engines (Agnes, Daphne, Muriel), add your API token in the extension settings.
+The **Cecil** engine works for free if you're signed into [kagi.com](https://kagi.com). For paid engines (Agnes, Muriel) and text summarization, add your API token in the extension settings.
 
 Get an API token at [kagi.com/settings/api](https://kagi.com/settings/api). See the [Summarizer API docs](https://help.kagi.com/kagi/api/summarizer.html) for pricing and usage details.
 
@@ -101,7 +101,7 @@ Sidebrief requests a few permissions in the `manifest.json` file.
 
 #### Privacy
 
-Sidebrief runs entirely in your browser. There are no background servers, no hidden calls, and no analytics. The only time any data leaves your device is when you explicitly request a summary, at which point the page URL is sent to the Kagi Summarizer API to generate it. Tiny Extensions does not collect or track anything. No analytics. No telemetry. No user data. When you request a summary, your interaction is governed solely by the [Kagi Privacy Policy](https://kagi.com/privacy) and [Kagi LLM Policy](https://help.kagi.com/kagi/privacy/llm-policy.html).
+Sidebrief runs entirely in your browser. There are no background servers, no hidden calls, and no analytics. The only time any data leaves your device is when you explicitly request a summary, at which point the page URL (or pasted text) is sent to the Kagi Summarizer API to generate it. Tiny Extensions does not collect or track anything. No analytics. No telemetry. No user data. When you request a summary, your interaction is governed solely by the [Kagi Privacy Policy](https://kagi.com/privacy) and [Kagi LLM Policy](https://help.kagi.com/kagi/privacy/llm-policy.html).
 
 ## License
 
