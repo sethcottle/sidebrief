@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sidebrief — Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="options-container">
+    <div class="options-header">
+      <img src="icons/icon48.png" alt="" class="options-icon">
+      <h1>Sidebrief</h1>
+    </div>
+
+    <div class="options-section">
+      <h2>API Token</h2>
+      <p class="options-description">
+        Enter your Kagi API token to use paid models.
+        Free users signed into Kagi can use Cecil without a token.
+      </p>
+      <div class="token-row">
+        <input type="password" id="api-token" class="token-input" placeholder="Your API token" autocomplete="off" spellcheck="false">
+        <button id="token-toggle" class="token-toggle" title="Show/hide token">
+          <svg id="icon-show" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          <svg id="icon-hide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+            <line x1="1" y1="1" x2="23" y2="23"/>
+          </svg>
+        </button>
+      </div>
+      <p class="options-hint">
+        Get a token at <a href="https://kagi.com/settings/api" target="_blank" rel="noopener">kagi.com/settings/api</a>
+      </p>
+    </div>
+
+    <div class="options-section">
+      <h2>Default Engine</h2>
+
+      <label class="option-row">
+        <input type="radio" name="engine" value="cecil">
+        <span class="option-label">
+          <strong>Cecil</strong>
+          <span class="option-detail">Free with Kagi account</span>
+        </span>
+      </label>
+
+      <label class="option-row">
+        <input type="radio" name="engine" value="agnes">
+        <span class="option-label">
+          <strong>Agnes</strong>
+          <span class="option-detail">Requires API token</span>
+        </span>
+      </label>
+
+      <label class="option-row">
+        <input type="radio" name="engine" value="daphne">
+        <span class="option-label">
+          <strong>Daphne</strong>
+          <span class="option-detail">Requires API token</span>
+        </span>
+      </label>
+
+      <label class="option-row">
+        <input type="radio" name="engine" value="muriel">
+        <span class="option-label">
+          <strong>Muriel</strong>
+          <span class="option-detail">Enterprise model, requires API token</span>
+        </span>
+      </label>
+    </div>
+
+    <div class="options-section">
+      <h2>Output Language</h2>
+      <select id="target-language" class="language-select">
+        <option value="">Default (page language)</option>
+        <option value="BG">Bulgarian</option>
+        <option value="CS">Czech</option>
+        <option value="DA">Danish</option>
+        <option value="DE">German</option>
+        <option value="EL">Greek</option>
+        <option value="EN">English</option>
+        <option value="ES">Spanish</option>
+        <option value="ET">Estonian</option>
+        <option value="FI">Finnish</option>
+        <option value="FR">French</option>
+        <option value="HU">Hungarian</option>
+        <option value="ID">Indonesian</option>
+        <option value="IT">Italian</option>
+        <option value="JA">Japanese</option>
+        <option value="KO">Korean</option>
+        <option value="LT">Lithuanian</option>
+        <option value="LV">Latvian</option>
+        <option value="NB">Norwegian</option>
+        <option value="NL">Dutch</option>
+        <option value="PL">Polish</option>
+        <option value="PT">Portuguese</option>
+        <option value="RO">Romanian</option>
+        <option value="RU">Russian</option>
+        <option value="SK">Slovak</option>
+        <option value="SL">Slovenian</option>
+        <option value="SV">Swedish</option>
+        <option value="TR">Turkish</option>
+        <option value="UK">Ukrainian</option>
+        <option value="ZH">Chinese (simplified)</option>
+        <option value="ZH-HANT">Chinese (traditional)</option>
+      </select>
+    </div>
+
+    <div class="options-section">
+      <h2>Theme Color</h2>
+      <div class="color-palette" id="color-palette">
+        <button class="color-swatch active" data-color="yellow" title="Yellow"></button>
+        <button class="color-swatch" data-color="orange" title="Orange"></button>
+        <button class="color-swatch" data-color="purple" title="Purple"></button>
+        <button class="color-swatch" data-color="sky" title="Sky"></button>
+        <button class="color-swatch" data-color="grass" title="Grass"></button>
+        <button class="color-swatch" data-color="graphite" title="Graphite"></button>
+      </div>
+    </div>
+
+    <div class="options-section">
+      <h2>Keyboard Shortcuts</h2>
+      <div class="shortcuts-list">
+        <div class="shortcut-row">
+          <span class="shortcut-label">Open sidebar</span>
+          <span class="shortcut-keys" id="shortcut-open"></span>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-label">Summarize page</span>
+          <span class="shortcut-keys" id="shortcut-summarize"></span>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-label">Key moments</span>
+          <span class="shortcut-keys" id="shortcut-moments"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="save-indicator" id="save-indicator">Settings saved</div>
+
+    <p class="options-footer">
+      Built by <a href="https://seth.social" target="_blank" rel="noopener">Seth Cottle</a>.
+      Part of <a href="https://tinyextensions.com" target="_blank" rel="noopener">Tiny Extensions</a>.
+      I'm also building <a href="https://openkagi.com" target="_blank" rel="noopener">OpenKagi</a>.
+      This extension is <a href="https://github.com/sethcottle/sidebrief" target="_blank" rel="noopener">open-source</a>.
+    </p>
+    <p class="options-disclaimer">Not affiliated with Kagi, Inc.</p>
+  </div>
+  <script src="options.js"></script>
+</body>
+</html>
