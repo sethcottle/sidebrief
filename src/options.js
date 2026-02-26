@@ -33,7 +33,12 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderShortcutKeys(containerId, keys) {
     const container = document.getElementById(containerId);
     if (!container) return;
-    container.innerHTML = keys.map((k) => `<kbd>${k}</kbd>`).join('');
+    container.textContent = '';
+    keys.forEach((k) => {
+      const kbd = document.createElement('kbd');
+      kbd.textContent = k;
+      container.appendChild(kbd);
+    });
   }
 
   const mac = isMac();

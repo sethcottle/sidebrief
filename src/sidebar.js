@@ -479,9 +479,20 @@ async function runSummarize(url, text) {
       // Show fallback notice if we fell back to Cecil
       if (result.fallbackReason) {
         const engineName = result.engine.charAt(0).toUpperCase() + result.engine.slice(1);
-        el.fallbackNotice.innerHTML = result.fallbackReason === 'insufficient_credit'
-          ? `Summarized with Cecil due to insufficient API credits to use ${engineName}. <a href="https://kagi.com/settings/billing_api" target="_blank" rel="noopener">Add credits</a>`
-          : `Summarized with Cecil (${engineName} requires an API token)`;
+        el.fallbackNotice.textContent = '';
+        if (result.fallbackReason === 'insufficient_credit') {
+          el.fallbackNotice.append(
+            `Summarized with Cecil due to insufficient API credits to use ${engineName}. `,
+          );
+          const creditsLink = document.createElement('a');
+          creditsLink.href = 'https://kagi.com/settings/billing_api';
+          creditsLink.target = '_blank';
+          creditsLink.rel = 'noopener';
+          creditsLink.textContent = 'Add credits';
+          el.fallbackNotice.appendChild(creditsLink);
+        } else {
+          el.fallbackNotice.textContent = `Summarized with Cecil (${engineName} requires an API token)`;
+        }
         el.fallbackNotice.style.display = '';
       } else {
         el.fallbackNotice.style.display = 'none';
