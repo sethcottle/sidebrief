@@ -620,6 +620,27 @@ function renderErrorActions(errorType) {
     settingsBtn.textContent = 'Update API key in Settings';
     settingsBtn.addEventListener('click', () => api.runtime.openOptionsPage());
     el.errorActions.appendChild(settingsBtn);
+  } else if (errorType === 'kagi_timeout' || errorType === 'kagi_unavailable' || errorType === 'kagi_rate_limit' || errorType === 'kagi_network') {
+    // Kagi service errors: offer retry and status page
+    const retryBtn = document.createElement('button');
+    retryBtn.className = 'error-action-link';
+    retryBtn.textContent = 'Try again';
+    retryBtn.addEventListener('click', () => {
+      if (currentText) {
+        runSummarize(null, currentText);
+      } else if (currentUrl) {
+        runSummarize(currentUrl);
+      }
+    });
+    el.errorActions.appendChild(retryBtn);
+
+    const statusLink = document.createElement('a');
+    statusLink.href = 'https://status.kagi.com';
+    statusLink.target = '_blank';
+    statusLink.rel = 'noopener';
+    statusLink.className = 'error-action-link';
+    statusLink.textContent = 'Kagi status page';
+    el.errorActions.appendChild(statusLink);
   }
 }
 

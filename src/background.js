@@ -285,6 +285,15 @@ async function summarizeContent({ url, text, summary_type }) {
           summary = 'Unauthorized. Please make sure you are signed in to kagi.com, or add an API key in Settings.';
           errorType = 'auth_signin';
         }
+      } else if (response.status === 429) {
+        summary = 'Kagi is rate limiting requests. Please wait a moment and try again.';
+        errorType = 'kagi_rate_limit';
+      } else if (response.status === 502 || response.status === 503) {
+        summary = 'Kagi\'s summarization service is temporarily unavailable. Please try again in a few minutes.';
+        errorType = 'kagi_unavailable';
+      } else if (response.status === 504) {
+        summary = 'Kagi\'s summarization service timed out. This can happen with long videos or complex pages. Try a shorter video or page, or try again later.';
+        errorType = 'kagi_timeout';
       } else {
         let isInsufficientCredit = false;
         try {
@@ -344,7 +353,15 @@ async function summarizeContent({ url, text, summary_type }) {
       }
     }
   } catch (error) {
-    summary = error.message ? `Error: ${error.message}` : JSON.stringify(error);
+    if (error.name === 'AbortError' || (error.message && error.message.toLowerCase().includes('timeout'))) {
+      summary = 'The request to Kagi timed out. This can happen with long videos or complex pages. Try a shorter video or page, or try again later.';
+      errorType = 'kagi_timeout';
+    } else if (error.message && error.message.toLowerCase().includes('failed to fetch')) {
+      summary = 'Could not connect to Kagi. Please check your internet connection and try again.';
+      errorType = 'kagi_network';
+    } else {
+      summary = error.message ? `Error: ${error.message}` : JSON.stringify(error);
+    }
   }
 
   return { summary, success, timeSavedInMinutes, errorType, fallbackReason, engine };
