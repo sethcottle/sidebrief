@@ -1,3 +1,11 @@
+@font-face {
+  font-family: 'OpenDyslexic';
+  src: url('fonts/OpenDyslexic-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -38,7 +46,7 @@
     --heading: #fff;
     --text: #e0e0e0;
     --text-secondary: #999;
-    --text-muted: #666;
+    --text-muted: #888;
     --text-faint: #555;
     --radio-border: #444;
     --radio-checked: #fff;
@@ -287,6 +295,99 @@ body {
   border-color: var(--input-focus);
 }
 
+/* Font settings */
+.font-setting-group {
+  margin-bottom: 16px;
+}
+
+.font-setting-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.font-size-options {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--input-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.font-size-option {
+  padding: 10px 16px;
+  border: none;
+  background: var(--input-bg);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.font-size-option:first-child {
+  border-right: 1px solid var(--input-border);
+}
+
+.font-size-option:last-child {
+  border-left: 1px solid var(--input-border);
+}
+
+.font-size-option:hover {
+  background: var(--row-hover);
+  color: var(--text);
+}
+
+.font-size-option:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.font-size-option:disabled:hover {
+  background: var(--input-bg);
+  color: var(--text-secondary);
+}
+
+.font-size-option:focus-visible {
+  outline: 2px solid var(--input-focus);
+  outline-offset: -2px;
+}
+
+.font-size-display {
+  flex: 1;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Font preview */
+.font-preview {
+  margin-top: 4px;
+  padding: 14px 16px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 10px;
+}
+
+.font-preview-heading {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.font-preview-text {
+  line-height: 1.7;
+  color: var(--text);
+}
+
 /* Color palette */
 .color-palette {
   display: flex;
@@ -436,4 +537,75 @@ body {
   font-size: 11px;
   color: var(--text-faint);
   text-align: center;
+}
+
+/* --- High Contrast Mode --- */
+@media (prefers-contrast: more) {
+  :root {
+    --input-border: rgba(0, 0, 0, 0.3);
+    --card-border: rgba(0, 0, 0, 0.2);
+    --divider: rgba(0, 0, 0, 0.15);
+  }
+
+  .font-size-option,
+  .token-toggle,
+  .color-swatch {
+    border-width: 2px;
+  }
+}
+
+@media (prefers-contrast: more) and (prefers-color-scheme: dark) {
+  :root {
+    --input-border: rgba(255, 255, 255, 0.3);
+    --card-border: rgba(255, 255, 255, 0.2);
+    --divider: rgba(255, 255, 255, 0.15);
+  }
+}
+
+/* --- Forced Colors (Windows High Contrast, etc.) --- */
+@media (forced-colors: active) {
+  .token-input,
+  .token-toggle,
+  .language-select,
+  .font-size-option {
+    border: 1px solid ButtonText;
+  }
+
+  .token-input:focus,
+  .language-select:focus,
+  .token-toggle:focus-visible,
+  .font-size-option:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+
+  .color-swatch {
+    border: 2px solid ButtonText;
+  }
+
+  .color-swatch.active {
+    border-color: Highlight;
+    box-shadow: 0 0 0 2px Highlight;
+  }
+
+  .color-swatch:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+
+  .option-row input[type="radio"] {
+    border-color: ButtonText;
+  }
+
+  .option-row input[type="radio"]:checked {
+    border-color: Highlight;
+  }
+
+  .option-row input[type="radio"]:checked::after {
+    background: Highlight;
+  }
+
+  .options-container {
+    border: 2px solid ButtonText;
+  }
 }

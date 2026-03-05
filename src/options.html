@@ -9,24 +9,24 @@
 <body>
   <div class="options-container">
     <div class="options-header">
-      <img src="icons/icon48.png" alt="" class="options-icon">
+      <img src="icons/icon48.png" alt="Sidebrief icon" class="options-icon">
       <h1>Sidebrief</h1>
     </div>
 
     <div class="options-section">
-      <h2>API Token</h2>
+      <h2 id="api-token-heading">API Token</h2>
       <p class="options-description">
         Add your Kagi API token to use paid engines and text summarization.
         You can use the Cecil engine for free if you're signed into your kagi.com account.
       </p>
       <div class="token-row">
-        <input type="password" id="api-token" class="token-input" placeholder="Your API token" autocomplete="off" spellcheck="false">
-        <button id="token-toggle" class="token-toggle" title="Show/hide token">
-          <svg id="icon-show" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <input type="password" id="api-token" class="token-input" placeholder="Your API token" autocomplete="off" spellcheck="false" aria-labelledby="api-token-heading">
+        <button id="token-toggle" class="token-toggle" title="Show/hide token" aria-label="Show token" aria-pressed="false">
+          <svg id="icon-show" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
             <circle cx="12" cy="12" r="3"/>
           </svg>
-          <svg id="icon-hide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+          <svg id="icon-hide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display: none;">
             <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
             <line x1="1" y1="1" x2="23" y2="23"/>
           </svg>
@@ -66,8 +66,8 @@
     </div>
 
     <div class="options-section">
-      <h2>Output Language</h2>
-      <select id="target-language" class="language-select">
+      <h2 id="output-language-heading">Output Language</h2>
+      <select id="target-language" class="language-select" aria-labelledby="output-language-heading">
         <option value="">Default (page language)</option>
         <option value="BG">Bulgarian</option>
         <option value="CS">Czech</option>
@@ -103,14 +103,42 @@
     </div>
 
     <div class="options-section">
+      <h2>Summary Text</h2>
+
+      <div class="font-setting-group">
+        <label class="font-setting-label" id="text-size-label">Summary Text Size</label>
+        <div class="font-size-options" id="font-size-options" role="group" aria-labelledby="text-size-label">
+          <button id="opt-font-decrease" class="font-size-option" title="Decrease text size" aria-label="Decrease text size">A−</button>
+          <span id="opt-font-value" class="font-size-display" aria-live="polite">14px</span>
+          <button id="opt-font-increase" class="font-size-option" title="Increase text size" aria-label="Increase text size">A+</button>
+        </div>
+      </div>
+
+      <div class="font-setting-group">
+        <label class="font-setting-label" for="font-family-select">Font Family</label>
+        <select id="font-family-select" class="language-select">
+          <option value="system">Sans-serif (System)</option>
+          <option value="serif">Serif</option>
+          <option value="monospace">Monospace</option>
+          <option value="dyslexic">OpenDyslexic</option>
+        </select>
+      </div>
+
+      <div class="font-preview" id="font-preview">
+        <p class="font-preview-heading">Preview</p>
+        <p class="font-preview-text">The quick brown fox jumps over the lazy dog. This is how your summary text will appear.</p>
+      </div>
+    </div>
+
+    <div class="options-section">
       <h2>Theme Color</h2>
-      <div class="color-palette" id="color-palette">
-        <button class="color-swatch active" data-color="yellow" title="Yellow"></button>
-        <button class="color-swatch" data-color="orange" title="Orange"></button>
-        <button class="color-swatch" data-color="purple" title="Purple"></button>
-        <button class="color-swatch" data-color="sky" title="Sky"></button>
-        <button class="color-swatch" data-color="grass" title="Grass"></button>
-        <button class="color-swatch" data-color="graphite" title="Graphite"></button>
+      <div class="color-palette" id="color-palette" role="group" aria-label="Theme color">
+        <button class="color-swatch active" data-color="yellow" title="Yellow" aria-label="Yellow" aria-pressed="true"></button>
+        <button class="color-swatch" data-color="orange" title="Orange" aria-label="Orange" aria-pressed="false"></button>
+        <button class="color-swatch" data-color="purple" title="Purple" aria-label="Purple" aria-pressed="false"></button>
+        <button class="color-swatch" data-color="sky" title="Sky" aria-label="Sky" aria-pressed="false"></button>
+        <button class="color-swatch" data-color="grass" title="Grass" aria-label="Grass" aria-pressed="false"></button>
+        <button class="color-swatch" data-color="graphite" title="Graphite" aria-label="Graphite" aria-pressed="false"></button>
       </div>
     </div>
 
@@ -132,7 +160,7 @@
       </div>
     </div>
 
-    <div class="save-indicator" id="save-indicator">Settings saved</div>
+    <div class="save-indicator" id="save-indicator" role="status" aria-live="polite">Settings saved</div>
 
     <p class="options-footer">
       Built by <a href="https://seth.social" target="_blank" rel="noopener">Seth Cottle</a>.

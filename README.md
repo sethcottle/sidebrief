@@ -19,21 +19,26 @@ Summarize any web page using the [Kagi Universal Summarizer](https://kagi.com/su
 
 Sidebrief opens a sidebar panel next to whatever page you're reading. Click the toolbar icon, use a keyboard shortcut, or right-click any link and a summary appears alongside the page. You can switch between a full summary and bullet-point key moments, change the summarization engine, or paste any URL to summarize a page you're not even on.
 
-<video src="https://cdn.cottle.cloud/tinyextensions/sidebrief/DemoSidebrief.mp4" autoplay loop muted playsinline width="100%"></video>
-
 > [!NOTE]
-> Sidebrief uses each browser's native sidebar API. The [Side Panel API](https://developer.chrome.com/docs/extensions/reference/api/sidePanel) on Chrome and [sidebar_action](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/sidebarAction) on Firefox. **Safari and [Orion](https://kagi.com/orion/) do not currently support a sidebar API for extensions**, so versions for those browsers are not available yet.
+> Sidebrief uses each browser's native sidebar API. The [Side Panel API](https://developer.chrome.com/docs/extensions/reference/api/sidePanel) on Chrome and [sidebar_action](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/sidebarAction) on Firefox. **Safari and [Orion](https://kagi.com/orion/) do not currently support a sidebar API for extensions**, so versions for those browsers are not available yet. Orion has similar functionality built in already.
 
 ## Features
 
 - **Sidebar interface**: summaries appear in a side panel alongside the page you're reading
 - **Summary or Key Moments**: toggle between a full summary and bullet-point key moments
 - **Paste any URL or text**: summarize any page by URL, or paste text directly (requires API token)
+- **Summarize selected text**: right-click highlighted text to summarize it (requires API token)
+- **Copy, Markdown, and Share**: copy summaries as plain text or Markdown, or share via the native share sheet
 - **Keyboard shortcuts**: open/close the sidebar, summarize, or get key moments without touching the mouse
-- **Quick settings**: change engine and output language directly from the sidebar header
-- **History**: recent summaries are saved locally so you can revisit them
+- **Quick settings**: change engine, output language, text size, and font family from the sidebar header
+- **Customizable text**: adjustable summary text size (12px–24px) with sans-serif, serif, monospace, and OpenDyslexic font options
+- **Theme colors**: six accent color choices
+- **History**: your last 10 summaries are saved locally so you can revisit them
 - **Light and dark theme**: follows your system preference
-- **Reduced motion**: respects `prefers-reduced-motion` for users who need it
+
+## Accessibility
+
+Sidebrief is built with accessibility in mind. The sidebar and options page include full ARIA labeling for screen readers, keyboard-navigable controls, and live region announcements for dynamic content like loading states and copy confirmations. All interactive elements meet WCAG 2.1 AA contrast ratios in both light and dark themes, and touch targets meet minimum size guidelines. The extension also respects `prefers-reduced-motion` to disable animations, `prefers-contrast: more` for increased contrast, and Windows High Contrast Mode (`forced-colors: active`). Summary text size is adjustable from 12px to 24px, and font family is customizable with serif, monospace, and [OpenDyslexic](https://opendyslexic.org/) options.
 
 ## Keyboard Shortcuts
 
@@ -101,7 +106,7 @@ Sidebrief requests a few permissions in the `manifest.json` file.
 
 #### Privacy
 
-Sidebrief runs entirely in your browser. There are no background servers, no hidden calls, and no analytics. The only time any data leaves your device is when you explicitly request a summary, at which point the page URL (or pasted text) is sent to the Kagi Summarizer API to generate it. Tiny Extensions does not collect or track anything. No analytics. No telemetry. No user data. When you request a summary, your interaction is governed solely by the [Kagi Privacy Policy](https://kagi.com/privacy) and [Kagi LLM Policy](https://help.kagi.com/kagi/privacy/llm-policy.html).
+Sidebrief runs entirely in your browser. There are no background servers, no hidden calls, and no analytics. The only time any data leaves your device is when you explicitly request a summary, at which point the page URL (or pasted text) is sent to the Kagi Summarizer API to generate it. Your preferences (engine, language, theme, etc.) are stored using your browser's built-in extension storage, which may sync across devices if you have browser sync enabled. Tiny Extensions does not collect or track anything. No analytics. No telemetry. No user data. When you request a summary, your interaction is governed solely by the [Kagi Privacy Policy](https://kagi.com/privacy) and [Kagi LLM Policy](https://help.kagi.com/kagi/privacy/llm-policy.html).
 
 ## License
 
@@ -111,7 +116,9 @@ Sidebrief for Kagi Summarizer is free software: you can redistribute it and/or m
 
 Sidebrief for Kagi Summarizer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. Please see the [GNU General Public License](https://www.gnu.org/licenses/quick-guide-gplv3.html) for more details.
 
-Inspired by the official [Kagi Summarizer Extension for Chrome](https://github.com/kagisearch/chrome_extension_summarizer). Love Kagi? Check out [OpenKagi](https://openkagi.com) to share and discover community-made Lenses and Themes.
+Sidebrief bundles the [OpenDyslexic](https://opendyslexic.org/) font by Abbie Gonzalez, licensed under the [SIL Open Font License 1.1](src/fonts/OFL.txt).
+
+Inspired by the official [Kagi Summarizer Extension for Chrome](https://github.com/kagisearch/chrome_extension_summarizer) & the built in summarizer in Orion. Love Kagi? Check out [OpenKagi](https://openkagi.com) to share and discover community-made Lenses and Themes.
 
 ---
 

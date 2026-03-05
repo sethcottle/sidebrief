@@ -9,7 +9,7 @@ if (api.sidePanel) {
   // Chrome: clicking the action icon opens the side panel
   api.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
 } else if (api.sidebarAction) {
-  // Firefox/Zen: clicking the action icon toggles the sidebar
+  // Firefox: clicking the action icon toggles the sidebar
   api.action.onClicked.addListener(() => {
     api.sidebarAction.toggle();
   });
@@ -18,7 +18,7 @@ if (api.sidePanel) {
 // --- Cache focused window ID for sidePanel.open() ---
 // sidePanel.open() must be called synchronously in user gesture handlers.
 // Any preceding await (like tabs.query) breaks the gesture chain.
-// We cache the window ID so we can call sidePanel.open() immediately.
+// Cache the window ID to call sidePanel.open() immediately.
 let lastFocusedWindowId = null;
 
 if (api.windows?.onFocusChanged) {
@@ -42,15 +42,28 @@ async function getSettings() {
 
 // --- Context Menus ---
 function createContextMenus() {
-  api.contextMenus.create({
-    id: 'kagi-summarize',
-    title: 'Sidebrief: Summarize',
-    contexts: ['link', 'page'],
-  });
-  api.contextMenus.create({
-    id: 'kagi-key-moments',
-    title: 'Sidebrief: Key Moments',
-    contexts: ['link', 'page'],
+  api.contextMenus.removeAll(() => {
+    api.contextMenus.create({
+      id: 'kagi-summarize',
+      title: 'Sidebrief: Summarize',
+      contexts: ['link', 'page'],
+    });
+    api.contextMenus.create({
+      id: 'kagi-key-moments',
+      title: 'Sidebrief: Key Moments',
+      contexts: ['link', 'page'],
+    });
+
+    // Selection menu is token-gated: only show when an API token exists
+    api.storage.sync.get('summarizer_settings').then((result) => {
+      if (result?.summarizer_settings?.api_token) {
+        api.contextMenus.create({
+          id: 'kagi-summarize-selection',
+          title: 'Sidebrief: Summarize Selection',
+          contexts: ['selection'],
+        });
+      }
+    });
   });
 }
 
@@ -75,8 +88,43 @@ api.runtime.onInstalled.addListener(async (details) => {
   }
 });
 
+// Dynamically add/remove selection context menu when token changes
+api.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'sync' || !changes.summarizer_settings) return;
+  const hadToken = Boolean(changes.summarizer_settings.oldValue?.api_token);
+  const hasToken = Boolean(changes.summarizer_settings.newValue?.api_token);
+  if (hasToken && !hadToken) {
+    api.contextMenus.create({
+      id: 'kagi-summarize-selection',
+      title: 'Sidebrief: Summarize Selection',
+      contexts: ['selection'],
+    });
+  } else if (!hasToken && hadToken) {
+    api.contextMenus.remove('kagi-summarize-selection').catch(() => {});
+  }
+});
+
 // --- Context Menu Click ---
 api.contextMenus.onClicked.addListener(async (info, tab) => {
+  // Handle selection-based summarization
+  if (info.menuItemId === 'kagi-summarize-selection') {
+    if (api.sidePanel && tab) {
+      try {
+        await api.sidePanel.open({ windowId: tab.windowId });
+      } catch (e) {
+        console.error('Failed to open side panel:', e);
+      }
+    }
+    setTimeout(() => {
+      api.runtime.sendMessage({
+        type: 'summarize_text',
+        text: info.selectionText,
+        summary_type: 'summary',
+      }).catch(() => {});
+    }, 500);
+    return;
+  }
+
   const url = info.linkUrl || info.pageUrl;
   const summaryType = info.menuItemId === 'kagi-key-moments' ? 'takeaway' : 'summary';
 
@@ -103,14 +151,14 @@ api.contextMenus.onClicked.addListener(async (info, tab) => {
 
 // --- Keyboard Shortcuts ---
 // IMPORTANT: Do NOT make this listener async. sidePanel.open() must be called
-// synchronously in the user gesture handler — any preceding await breaks it.
+// synchronously in the user gesture handler, any preceding await breaks it.
 api.commands.onCommand.addListener((command) => {
-  // open-sidebar: toggle — open if closed, close if already open
+  // open-sidebar: toggle, open if closed, close if already open
   if (command === 'open-sidebar') {
     if (api.sidePanel && lastFocusedWindowId) {
       // Chrome: open synchronously (no-op if already open, required for gesture chain)
       api.sidePanel.open({ windowId: lastFocusedWindowId }).catch(() => {});
-      // After a short delay, tell the sidebar to toggle — it uses its own load
+      // After a short delay, tell the sidebar to toggle, it uses its own load
       // timestamp to decide: if it was already alive, close; if just opened, stay.
       setTimeout(() => {
         api.runtime.sendMessage({ type: 'toggle_sidebar' }).catch(() => {});
@@ -122,7 +170,7 @@ api.commands.onCommand.addListener((command) => {
     return;
   }
 
-  // Open sidebar IMMEDIATELY (no await before this)
+  // Open sidebar (no await before this)
   if (api.sidePanel && lastFocusedWindowId) {
     api.sidePanel.open({ windowId: lastFocusedWindowId }).catch((e) => {
       console.error('Failed to open side panel:', e);

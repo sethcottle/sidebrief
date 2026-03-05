@@ -13,6 +13,26 @@ const themeColors = {
   graphite: { light: '#4B5563', dark: '#9CA3AF', hoverLight: '#374151', hoverDark: '#D1D5DB', textLight: '#ffffff', textDark: '#191919' },
 };
 
+// --- Font Settings ---
+// Font size: stored as numeric px value (12–24, default 14)
+const FONT_SIZE_MIN = 12;
+const FONT_SIZE_MAX = 24;
+const FONT_SIZE_STEP = 1;
+const FONT_SIZE_DEFAULT = 14;
+
+function normalizeFontSize(value) {
+  if (typeof value === 'number') return Math.min(Math.max(value, FONT_SIZE_MIN), FONT_SIZE_MAX);
+  const legacy = { small: 13, medium: 14, large: 16 };
+  return legacy[value] || FONT_SIZE_DEFAULT;
+}
+
+const fontFamilyMap = {
+  system:    '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  serif:     'Georgia, "Noto Serif", "Times New Roman", serif',
+  monospace: '"SF Mono", "Cascadia Code", "Fira Code", Consolas, "Liberation Mono", monospace',
+  dyslexic:  '"OpenDyslexic", sans-serif',
+};
+
 // --- State ---
 let currentUrl = '';
 let currentText = ''; // Text input for text-mode summarization
@@ -43,12 +63,47 @@ async function loadThemeColor() {
   applyThemeColor(currentThemeColor);
 }
 
+// --- Font Settings ---
+let currentFontSize = FONT_SIZE_DEFAULT;
+let currentFontFamily = 'system';
+
+function applyFontSettings(fontSize, fontFamily) {
+  const root = document.documentElement;
+  const size = normalizeFontSize(fontSize);
+  root.style.setProperty('--summary-font-size', `${size}px`);
+  root.style.setProperty('--summary-h2-size', `${size + 2}px`);
+  root.style.setProperty('--summary-font-family', fontFamilyMap[fontFamily] || fontFamilyMap.system);
+}
+
+function updateFontSizeDisplay() {
+  if (!el.fontSizeValue) return;
+  el.fontSizeValue.textContent = `${currentFontSize}px`;
+  el.fontSizeDecrease.disabled = currentFontSize <= FONT_SIZE_MIN;
+  el.fontSizeIncrease.disabled = currentFontSize >= FONT_SIZE_MAX;
+}
+
+function adjustFontSize(delta) {
+  const newSize = Math.min(Math.max(currentFontSize + delta, FONT_SIZE_MIN), FONT_SIZE_MAX);
+  if (newSize === currentFontSize) return;
+  currentFontSize = newSize;
+  applyFontSettings(currentFontSize, currentFontFamily);
+  updateFontSizeDisplay();
+  saveQuickSetting('font_size', currentFontSize);
+}
+
+async function loadFontSettings() {
+  const result = await api.storage.sync.get('summarizer_settings');
+  currentFontSize = normalizeFontSize(result?.summarizer_settings?.font_size ?? FONT_SIZE_DEFAULT);
+  currentFontFamily = result?.summarizer_settings?.font_family || 'system';
+  applyFontSettings(currentFontSize, currentFontFamily);
+}
+
 // Re-apply when system theme changes
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
   applyThemeColor(currentThemeColor);
 });
 
-// Live update when user changes color in options
+// Live update when user changes settings in options
 api.storage.onChanged.addListener((changes, area) => {
   if (area === 'sync' && changes.summarizer_settings) {
     const newColor = changes.summarizer_settings.newValue?.theme_color;
@@ -56,12 +111,28 @@ api.storage.onChanged.addListener((changes, area) => {
       currentThemeColor = newColor;
       applyThemeColor(currentThemeColor);
     }
+    const newFontSize = changes.summarizer_settings.newValue?.font_size;
+    if (newFontSize != null) {
+      const normalized = normalizeFontSize(newFontSize);
+      if (normalized !== currentFontSize) {
+        currentFontSize = normalized;
+        applyFontSettings(currentFontSize, currentFontFamily);
+        updateFontSizeDisplay();
+      }
+    }
+    const newFontFamily = changes.summarizer_settings.newValue?.font_family;
+    if (newFontFamily && newFontFamily !== currentFontFamily) {
+      currentFontFamily = newFontFamily;
+      applyFontSettings(currentFontSize, currentFontFamily);
+      if (el.quickFontFamily) el.quickFontFamily.value = newFontFamily;
+    }
   }
 });
 
 // --- Initialize ---
 document.addEventListener('DOMContentLoaded', async () => {
   await loadThemeColor();
+  await loadFontSettings();
   cacheElements();
   setupShortcutLabel();
   setupListeners();
@@ -69,7 +140,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadQuickSettings();
   await updateTokenState();
   await renderHistory();
-  // Don't auto-summarize on load — wait for an explicit trigger
+  // Don't auto-summarize on load, wait for an explicit trigger
   // (Alt+Shift+S, context menu, or user clicking "Summarize this Page")
   showState('empty');
 });
@@ -95,14 +166,21 @@ function cacheElements() {
     footer: document.getElementById('sidebar-footer'),
     timeSaved: document.getElementById('time-saved'),
     copyBtn: document.getElementById('copy-btn'),
-    copyLabel: document.getElementById('copy-label'),
+    copyMdBtn: document.getElementById('copy-md-btn'),
+    shareBtn: document.getElementById('share-btn'),
     redoBtn: document.getElementById('redo-btn'),
+    srStatus: document.getElementById('sr-status'),
     clearBtn: document.getElementById('clear-btn'),
     settingsBtn: document.getElementById('settings-btn'),
     quickSettingsBtn: document.getElementById('quick-settings-btn'),
     quickDropdown: document.getElementById('quick-settings-dropdown'),
     quickEngine: document.getElementById('quick-engine'),
     quickLanguage: document.getElementById('quick-language'),
+    quickFontSize: document.getElementById('quick-font-size'),
+    fontSizeDecrease: document.getElementById('font-size-decrease'),
+    fontSizeIncrease: document.getElementById('font-size-increase'),
+    fontSizeValue: document.getElementById('font-size-value'),
+    quickFontFamily: document.getElementById('quick-font-family'),
     historySection: document.getElementById('history-section'),
     historyToggle: document.getElementById('history-toggle'),
     historyList: document.getElementById('history-list'),
@@ -133,7 +211,7 @@ function setupShortcutLabel() {
 }
 
 function setupListeners() {
-  // Clear button → reset to empty state
+  // Clear button > reset to empty state
   el.clearBtn.addEventListener('click', () => {
     currentUrl = '';
     currentText = '';
@@ -144,7 +222,7 @@ function setupListeners() {
     showState('empty');
   });
 
-  // Settings button → options page
+  // Settings button > options page
   el.settingsBtn.addEventListener('click', () => {
     api.runtime.openOptionsPage();
   });
@@ -164,7 +242,7 @@ function setupListeners() {
     }
   });
 
-  // URL input — show/hide clear button and auto-resize as user types
+  // URL input, show/hide clear button and auto-resize as user types
   el.urlInput.addEventListener('input', () => {
     updateUrlBarButtons();
     autoResizeInput();
@@ -195,6 +273,15 @@ function setupListeners() {
   // Copy button
   el.copyBtn.addEventListener('click', handleCopy);
 
+  // Copy as Markdown button
+  el.copyMdBtn.addEventListener('click', handleCopyMarkdown);
+
+  // Share button (only visible if Web Share API is available)
+  if (navigator.share) {
+    el.shareBtn.style.display = '';
+  }
+  el.shareBtn.addEventListener('click', handleShare);
+
   // Redo button
   el.redoBtn.addEventListener('click', () => {
     if (currentText) {
@@ -209,6 +296,11 @@ function setupListeners() {
     e.stopPropagation();
     const visible = el.quickDropdown.style.display !== 'none';
     el.quickDropdown.style.display = visible ? 'none' : '';
+    el.quickSettingsBtn.setAttribute('aria-expanded', String(!visible));
+    if (!visible) {
+      const first = el.quickDropdown.querySelector('select, button, input');
+      if (first) first.focus();
+    }
   });
 
   // Quick engine/language change — save immediately
@@ -219,10 +311,47 @@ function setupListeners() {
     saveQuickSetting('target_language', el.quickLanguage.value);
   });
 
+  // Font size A-/A+ buttons
+  el.fontSizeDecrease.addEventListener('click', () => adjustFontSize(-FONT_SIZE_STEP));
+  el.fontSizeIncrease.addEventListener('click', () => adjustFontSize(FONT_SIZE_STEP));
+
+  // Quick font family change
+  el.quickFontFamily.addEventListener('change', () => {
+    currentFontFamily = el.quickFontFamily.value;
+    applyFontSettings(currentFontSize, currentFontFamily);
+    saveQuickSetting('font_family', el.quickFontFamily.value);
+  });
+
   // Close dropdown when clicking elsewhere
   document.addEventListener('click', (e) => {
     if (!el.quickDropdown.contains(e.target) && e.target !== el.quickSettingsBtn) {
       el.quickDropdown.style.display = 'none';
+      el.quickSettingsBtn.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  // Close dropdown on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && el.quickDropdown.style.display !== 'none') {
+      el.quickDropdown.style.display = 'none';
+      el.quickSettingsBtn.setAttribute('aria-expanded', 'false');
+      el.quickSettingsBtn.focus();
+    }
+  });
+
+  // Focus trap within quick settings dropdown
+  el.quickDropdown.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab') return;
+    const focusable = el.quickDropdown.querySelectorAll('select, button, input');
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
     }
   });
 
@@ -238,6 +367,7 @@ function setupListeners() {
     historyOpen = !historyOpen;
     el.historyList.style.display = historyOpen ? '' : 'none';
     el.historyToggle.classList.toggle('open', historyOpen);
+    el.historyToggle.setAttribute('aria-expanded', String(historyOpen));
   });
 
   // Listen for external triggers (context menu, keyboard shortcut, toggle)
@@ -259,6 +389,17 @@ function setupListeners() {
       }
       runSummarize(message.url);
     }
+    if (message.type === 'summarize_text') {
+      currentText = message.text;
+      currentUrl = '';
+      el.urlInput.value = message.text;
+      autoResizeInput();
+      updateUrlBarButtons();
+      if (message.summary_type) {
+        setActiveType(message.summary_type, false);
+      }
+      runSummarize(null, message.text);
+    }
   });
 }
 
@@ -273,7 +414,7 @@ function autoResizeInput() {
   const textarea = el.urlInput;
   const value = textarea.value.trim();
 
-  // URLs stay single-line and truncated; text expands
+  // URLs stay single line and truncated; text expands
   if (!value || isUrl(value)) {
     textarea.classList.add('single-line');
     textarea.classList.remove('expanded');
@@ -303,7 +444,7 @@ async function updateTokenState() {
 
 // Show/hide the "Summarize current page" text link based on state
 function updateCurrentPageAction() {
-  // Show when a result or error is active — the user may have navigated
+  // Show when a result or error is active, the user may have navigated
   // to a new page and wants to quickly summarize wherever they are now
   const resultVisible = el.stateResult.style.display !== 'none';
   const errorVisible = el.stateError.style.display !== 'none';
@@ -322,13 +463,13 @@ function isUrl(input) {
 function handleUrlSubmit() {
   const input = el.urlInput.value.trim();
   if (!input) {
-    // No input — summarize current page
+    // No input, summarize current page
     summarizeCurrentPage();
     return;
   }
 
   if (isUrl(input)) {
-    // URL mode — current behavior
+    // URL mode, current behavior
     let url = input;
     if (!/^https?:\/\//i.test(url)) {
       url = 'https://' + url;
@@ -344,7 +485,7 @@ function handleUrlSubmit() {
       showState('error');
     }
   } else {
-    // Text mode — requires API token
+    // Text mode, requires API token
     if (!hasApiToken) {
       el.errorMessage.textContent = 'Text summarization requires an API token. Add one in Settings.';
       renderErrorActions('auth_token');
@@ -362,7 +503,7 @@ async function loadQuickSettings() {
   try {
     const result = await api.storage.sync.get('summarizer_settings');
     const s = result?.summarizer_settings || {};
-    // Migrate deprecated daphne → agnes
+    // Migrate deprecated daphne > agnes
     let engine = s.engine || 'cecil';
     if (engine === 'daphne') {
       engine = 'agnes';
@@ -370,8 +511,12 @@ async function loadQuickSettings() {
     }
     el.quickEngine.value = engine;
     el.quickLanguage.value = s.target_language || '';
+
+    // Font settings
+    currentFontSize = normalizeFontSize(s.font_size ?? FONT_SIZE_DEFAULT);
+    updateFontSizeDisplay();
+    el.quickFontFamily.value = s.font_family || 'system';
   } catch (e) {
-    // defaults are fine
   }
 }
 
@@ -393,10 +538,14 @@ function setActiveType(type, shouldResummarize = true) {
 
   if (type === 'takeaway') {
     el.typeSummary.classList.remove('active');
+    el.typeSummary.setAttribute('aria-pressed', 'false');
     el.typeTakeaway.classList.add('active');
+    el.typeTakeaway.setAttribute('aria-pressed', 'true');
   } else {
     el.typeTakeaway.classList.remove('active');
+    el.typeTakeaway.setAttribute('aria-pressed', 'false');
     el.typeSummary.classList.add('active');
+    el.typeSummary.setAttribute('aria-pressed', 'true');
   }
 
   updateShortcutLabel();
@@ -424,7 +573,6 @@ async function loadSavedType() {
     const type = result?.summarizer_settings?.summary_type || 'summary';
     setActiveType(type, false);
   } catch (e) {
-    // Default to summary
   }
 }
 
@@ -531,7 +679,7 @@ function renderSummary(text, summaryType) {
 
   if (!text || !text.trim()) return;
 
-  // Check if the API returned HTML — strip tags and render as clean text
+  // Check if the API returned HTML, strip tags and render as clean text
   const hasHtml = /<\/?[a-z][\s\S]*?>/i.test(text);
 
   if (hasHtml) {
@@ -542,6 +690,16 @@ function renderSummary(text, summaryType) {
     const blocks = doc.querySelectorAll('p, li, h1, h2, h3, h4, h5, h6, div, blockquote');
 
     if (blocks.length > 0) {
+      // Pre-scan: find minimum heading level to preserve relative hierarchy
+      let minHeadingLevel = 6;
+      blocks.forEach((block) => {
+        const tag = block.tagName.toLowerCase();
+        if (/^h[1-6]$/.test(tag)) {
+          minHeadingLevel = Math.min(minHeadingLevel, parseInt(tag[1], 10));
+        }
+      });
+      const headingOffset = 2 - minHeadingLevel;
+
       blocks.forEach((block) => {
         const txt = block.textContent.trim();
         if (!txt) return;
@@ -549,13 +707,14 @@ function renderSummary(text, summaryType) {
         const tagName = block.tagName.toLowerCase();
 
         if (tagName === 'li') {
-          // Collect into a list — but for simplicity, render each as a bullet
+          // Collect into a list, but for simplicity, render each as a bullet
           const li = document.createElement('div');
           li.className = 'summary-bullet';
           li.textContent = txt;
           container.appendChild(li);
-        } else if (tagName.startsWith('h')) {
-          const heading = document.createElement('h2');
+        } else if (/^h[1-6]$/.test(tagName)) {
+          const level = Math.min(Math.max(parseInt(tagName[1], 10) + headingOffset, 2), 4);
+          const heading = document.createElement(`h${level}`);
           heading.textContent = txt;
           container.appendChild(heading);
         } else {
@@ -565,7 +724,7 @@ function renderSummary(text, summaryType) {
         }
       });
     } else {
-      // No block elements — just get the full text
+      // No block elements, just get the full text
       const plainText = doc.body.textContent.trim();
       renderPlainText(container, plainText, summaryType);
     }
@@ -588,7 +747,7 @@ function renderPlainText(container, text, summaryType) {
     }
     container.appendChild(ul);
   } else {
-    // Render as paragraphs — don't force first line as h2 since API content varies
+    // Render as paragraphs
     for (const line of lines) {
       const p = document.createElement('p');
       p.textContent = line;
@@ -632,7 +791,7 @@ function renderErrorActions(errorType) {
     settingsBtn.addEventListener('click', () => api.runtime.openOptionsPage());
     el.errorActions.appendChild(settingsBtn);
   } else if (errorType === 'kagi_timeout' || errorType === 'kagi_unavailable' || errorType === 'kagi_rate_limit' || errorType === 'kagi_network') {
-    // Kagi service errors: offer retry and status page
+    // Kagi service errors: retry and status page
     const retryBtn = document.createElement('button');
     retryBtn.className = 'error-action-link';
     retryBtn.textContent = 'Try again';
@@ -748,6 +907,7 @@ function showState(state) {
       el.stateResult.style.display = '';
       el.footer.style.display = '';
       el.clearBtn.style.display = '';
+      el.copyMdBtn.style.visibility = getActiveType() === 'takeaway' ? 'visible' : 'hidden';
       break;
     case 'error':
       el.stateError.style.display = '';
@@ -759,6 +919,29 @@ function showState(state) {
   updateCurrentPageAction();
 }
 
+// --- Screen reader announcement helper ---
+function announce(message) {
+  el.srStatus.textContent = '';
+  requestAnimationFrame(() => { el.srStatus.textContent = message; });
+}
+
+// --- Copy feedback helper ---
+const CHECK_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+
+function showCopiedFeedback(btn, originalLabel) {
+  const originalSvg = btn.innerHTML;
+  btn.innerHTML = CHECK_SVG;
+  btn.classList.add('copied');
+  btn.setAttribute('aria-label', 'Copied to clipboard');
+  announce('Copied to clipboard');
+
+  setTimeout(() => {
+    btn.innerHTML = originalSvg;
+    btn.classList.remove('copied');
+    btn.setAttribute('aria-label', originalLabel);
+  }, 1500);
+}
+
 // --- Copy ---
 async function handleCopy() {
   const text = el.summaryContent.innerText;
@@ -766,13 +949,7 @@ async function handleCopy() {
 
   try {
     await navigator.clipboard.writeText(text);
-    el.copyBtn.classList.add('copied');
-    el.copyLabel.textContent = 'Copied!';
-
-    setTimeout(() => {
-      el.copyBtn.classList.remove('copied');
-      el.copyLabel.textContent = 'Copy';
-    }, 1500);
+    showCopiedFeedback(el.copyBtn, 'Copy summary');
   } catch (e) {
     // Fallback: select text
     const range = document.createRange();
@@ -780,6 +957,70 @@ async function handleCopy() {
     const sel = window.getSelection();
     sel.removeAllRanges();
     sel.addRange(range);
+  }
+}
+
+// --- Copy as Markdown ---
+function summaryToMarkdown() {
+  const children = el.summaryContent.children;
+  const lines = [];
+
+  for (const child of children) {
+    const tag = child.tagName.toLowerCase();
+    const text = child.textContent.trim();
+    if (!text) continue;
+
+    if (tag === 'h2') {
+      lines.push(`## ${text}\n`);
+    } else if (tag === 'h3') {
+      lines.push(`### ${text}\n`);
+    } else if (tag === 'h4') {
+      lines.push(`#### ${text}\n`);
+    } else if (tag === 'ul') {
+      for (const li of child.children) {
+        if (li.tagName.toLowerCase() === 'li') {
+          lines.push(`- ${li.textContent.trim()}`);
+        }
+      }
+      lines.push('');
+    } else if (child.classList.contains('summary-bullet')) {
+      lines.push(`- ${text}`);
+    } else {
+      lines.push(`${text}\n`);
+    }
+  }
+
+  return lines.join('\n').trim();
+}
+
+async function handleCopyMarkdown() {
+  const markdown = summaryToMarkdown();
+  if (!markdown) return;
+
+  try {
+    await navigator.clipboard.writeText(markdown);
+    showCopiedFeedback(el.copyMdBtn, 'Copy as Markdown');
+  } catch (e) {
+    const range = document.createRange();
+    range.selectNodeContents(el.summaryContent);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+}
+
+// --- Share ---
+async function handleShare() {
+  const text = el.summaryContent.innerText;
+  if (!text) return;
+
+  const shareData = { title: 'Summary', text };
+  if (currentUrl) shareData.url = currentUrl;
+
+  try {
+    await navigator.share(shareData);
+  } catch (e) {
+    // User cancelled or share failed, no action needed
   }
 }
 

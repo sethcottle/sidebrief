@@ -1,7 +1,28 @@
+@font-face {
+  font-family: 'OpenDyslexic';
+  src: url('fonts/OpenDyslexic-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+}
+
+/* Screen reader only, visually hidden but accessible */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* Light theme */
@@ -27,6 +48,9 @@
   --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
   --dropdown-bg: #fff;
   --dropdown-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --summary-font-size: 14px;
+  --summary-h2-size: 16px;
+  --summary-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 /* Dark theme */
@@ -38,7 +62,7 @@
     --border: rgba(255, 255, 255, 0.08);
     --text-primary: #f0f0f0;
     --text-secondary: #aaa;
-    --text-muted: #666;
+    --text-muted: #888;
     --text-faint: #444;
     --accent: #ffb319;
     --accent-hover: #ffc94d;
@@ -157,8 +181,9 @@ html, body {
   margin-bottom: 6px;
 }
 
-.quick-label + .quick-label {
-  margin-top: 10px;
+.quick-select + .quick-label,
+.quick-font-size + .quick-label {
+  margin-top: 12px;
 }
 
 .quick-select {
@@ -183,6 +208,65 @@ html, body {
 
 .quick-select:focus {
   border-color: var(--accent);
+}
+
+/* Font size toggle buttons in quick settings */
+.quick-font-size {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 2px;
+}
+
+.font-size-btn {
+  padding: 7px 12px;
+  border: none;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.font-size-btn:first-child {
+  border-right: 1px solid var(--border);
+}
+
+.font-size-btn:last-child {
+  border-left: 1px solid var(--border);
+}
+
+.font-size-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.font-size-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.font-size-btn:disabled:hover {
+  background: var(--surface);
+  color: var(--text-secondary);
+}
+
+.font-size-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.font-size-value {
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
 }
 
 /* --- URL bar --- */
@@ -491,17 +575,33 @@ html, body {
 }
 
 .summary-content {
-  font-size: 14px;
+  font-size: var(--summary-font-size, 14px);
+  font-family: var(--summary-font-family, inherit);
   line-height: 1.7;
   color: var(--text-primary);
 }
 
 .summary-content h2 {
-  font-size: 16px;
+  font-size: var(--summary-h2-size, 16px);
   font-weight: 600;
   line-height: 1.4;
   margin-bottom: 12px;
   letter-spacing: -0.01em;
+}
+
+.summary-content h3 {
+  font-size: calc(var(--summary-h2-size, 16px) - 1px);
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 10px;
+  letter-spacing: -0.01em;
+}
+
+.summary-content h4 {
+  font-size: var(--summary-font-size, 14px);
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 8px;
 }
 
 .summary-content p {
@@ -515,7 +615,7 @@ html, body {
 /* Bullet from HTML parsing */
 .summary-bullet {
   position: relative;
-  padding-left: 20px;
+  padding-left: 1.4em;
   margin-bottom: 10px;
   line-height: 1.6;
 }
@@ -524,9 +624,9 @@ html, body {
   content: '';
   position: absolute;
   left: 0;
-  top: 10px;
-  width: 6px;
-  height: 6px;
+  top: 0.55em;
+  width: 0.45em;
+  height: 0.45em;
   background: var(--accent);
   border-radius: 50%;
 }
@@ -539,7 +639,7 @@ html, body {
 
 .summary-content ul li {
   position: relative;
-  padding-left: 20px;
+  padding-left: 1.4em;
   margin-bottom: 10px;
   line-height: 1.6;
 }
@@ -548,9 +648,9 @@ html, body {
   content: '';
   position: absolute;
   left: 0;
-  top: 10px;
-  width: 6px;
-  height: 6px;
+  top: 0.55em;
+  width: 0.45em;
+  height: 0.45em;
   background: var(--accent);
   border-radius: 50%;
 }
@@ -719,8 +819,8 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
   border: none;
   border-radius: 6px;
@@ -767,6 +867,11 @@ html, body {
   gap: 8px;
 }
 
+.action-btn.icon-only {
+  padding: 8px;
+  gap: 0;
+}
+
 .action-btn {
   display: inline-flex;
   align-items: center;
@@ -797,4 +902,89 @@ html, body {
   background: var(--accent);
   color: var(--accent-text);
   border-color: var(--accent);
+}
+
+/* --- High Contrast Mode --- */
+@media (prefers-contrast: more) {
+  :root {
+    --border: rgba(0, 0, 0, 0.25);
+  }
+
+  .icon-btn,
+  .summarize-btn,
+  .type-btn,
+  .font-size-btn,
+  .clear-url-btn,
+  .summarize-page-btn {
+    border: 1px solid var(--border);
+  }
+
+  .quick-select,
+  .url-input-row,
+  .error-container {
+    border-width: 2px;
+  }
+}
+
+@media (prefers-contrast: more) and (prefers-color-scheme: dark) {
+  :root {
+    --border: rgba(255, 255, 255, 0.25);
+  }
+}
+
+/* --- Forced Colors (Windows High Contrast, etc.) --- */
+@media (forced-colors: active) {
+  .icon-btn,
+  .action-btn,
+  .summarize-btn,
+  .summarize-page-btn,
+  .type-btn,
+  .font-size-btn,
+  .clear-url-btn,
+  .history-item,
+  .history-remove,
+  .history-toggle,
+  .error-action-link {
+    border: 1px solid ButtonText;
+  }
+
+  .icon-btn:focus-visible,
+  .action-btn:focus-visible,
+  .summarize-btn:focus-visible,
+  .summarize-page-btn:focus-visible,
+  .type-btn:focus-visible,
+  .font-size-btn:focus-visible,
+  .clear-url-btn:focus-visible,
+  .quick-select:focus,
+  .url-input-row:focus-within,
+  .history-item:focus-visible,
+  .history-remove:focus-visible,
+  .error-action-link:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+
+  .type-btn.active,
+  .action-btn.copied {
+    background: Highlight;
+    color: HighlightText;
+    border-color: Highlight;
+  }
+
+  .summary-bullet::before,
+  .summary-content ul li::before {
+    background: ButtonText;
+  }
+
+  .loading-spinner {
+    color: ButtonText;
+  }
+
+  .quick-dropdown {
+    border: 2px solid ButtonText;
+  }
+
+  .url-input-row {
+    border: 2px solid ButtonText;
+  }
 }

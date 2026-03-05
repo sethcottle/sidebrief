@@ -24,6 +24,12 @@ for file in $SHARED_FILES; do
   cp "$SRC_DIR/$file" "$DIST_DIR/firefox/$file"
 done
 
+# Copy fonts to both targets
+mkdir -p "$DIST_DIR/chrome/fonts" "$DIST_DIR/firefox/fonts"
+for font in "$SRC_DIR"/fonts/*; do
+  [ -f "$font" ] && cp "$font" "$DIST_DIR/chrome/fonts/" && cp "$font" "$DIST_DIR/firefox/fonts/"
+done
+
 # Copy icons to both targets
 mkdir -p "$DIST_DIR/chrome/icons" "$DIST_DIR/firefox/icons"
 for icon in icon16.png icon32.png icon48.png icon128.png; do
